@@ -1,0 +1,46 @@
+#include <mcp_can.h>
+#include <SPI.h>
+
+#ifdef ARDUINO_SAMD_VARIANT_COMPLIANCE
+  #define SERIAL SerialUSB
+#else
+  #define SERIAL Serial
+#endif
+
+const int SPI_CS_PIN = 9;
+
+MCP_CAN CAN(SPI_CS_PIN);                                 
+
+void setup()
+{
+    SERIAL.begin(115200);
+
+    while (CAN_OK != CAN.begin(CAN_125KBPS))           
+    {
+        SERIAL.println("CAN BUS Shield init fail");
+        SERIAL.println(" Init CAN BUS Shield again");
+        delay(100);
+    }
+    SERIAL.println("CAN BUS Shield init ok!");
+}
+
+unsigned char stmp[8] = {27,  228, 0, 0, 0, 0, 0,0}; // Second bit must be in a cycle and after every command
+                                                 //it should be increased as = 36, 100, 164, 228   
+void loop()
+{
+    stmp[7] = stmp[7]+1;
+    if(stmp[7] == 100)
+    {
+        stmp[7] = 0;
+        stmp[6] = stmp[6] + 1;
+        
+        if(stmp[6] == 100)
+        {
+            stmp[6] = 0;
+            stmp[5] = stmp[6] + 1;
+        }
+    }
+    
+    CAN.sendMsgBuf(0x474, 0, 2, stmp);
+    delay(100000000);                       
+}
